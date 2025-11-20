@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Hikaye Görüntüleyici</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        #story-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 20px; }
+        .story-item { border: 1px solid #ccc; padding: 10px; border-radius: 8px; width: 150px; }
+        .story-item img, .story-item video { max-width: 100%; height: auto; border-radius: 4px; }
+        .download-btn { display: block; margin-top: 10px; padding: 5px; background-color: #f00; color: white; text-decoration: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Anonim TikTok Hikaye Görüntüleyici</h1>
+    <form id="search-form">
+        <input type="text" id="username" name="username" placeholder="TikTok Kullanıcı Adı" required>
+        <button type="submit">Hikayeleri Gör</button>
+    </form>
+
+    <div id="loading" style="display: none; color: blue;">Yükleniyor...</div>
+    <div id="error-message" style="color: red; margin-top: 10px;"></div>
+    
+    <div id="story-container">
+        </div>
+
+    <script>
+        document.getElementById('search-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const container = document.getElementById('story-container');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error-message');
+
+            container.innerHTML = '';
+            errorDiv.textContent = '';
+            loading.style.display = 'block';
+
+            fetch('/get_stories', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `username=${username}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                if (data.success) {
+                    if (data.stories.length === 0) {
+                        errorDiv.textContent = 'Bu kullanıcıya ait aktif hikaye bulunamadı.';
+                        return;
+                    }
+                    data.stories.forEach(story => {
+                        const item = document.createElement('div');
+                        item.className = 'story-item';
+                        
+                        if (story.type === 'video') {
+                            // Sadece önizleme resmi gösteriyoruz, video oynatıcı Render'ı zorlayabilir
+                            const img = document.createElement('img');
+                            img.src = story.preview || 'varsayilan_video_onizlemesi.png';
+                            img.alt = 'Video Önizlemesi';
+                            item.appendChild(img);
+                        } else {
+                            const img = document.createElement('img');
+                            img.src = story.url;
+                            img.alt = 'Hikaye Resmi';
+                            item.appendChild(img);
+                        }
+
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = story.url;
+                        downloadLink.className = 'download-btn';
+                        downloadLink.textContent = 'İndir';
+                        downloadLink.download = `${username}_story_${story.id}`; // İndirme dosya adı
+                        item.appendChild(downloadLink);
+                        
+                        container.appendChild(item);
+                    });
+                } else {
+                    errorDiv.textContent = data.error || 'Hikayeler yüklenirken bir hata oluştu.';
+                }
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                errorDiv.textContent = 'Bağlantı hatası: Sunucuya ulaşılamadı.';
+                console.error('Fetch error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
