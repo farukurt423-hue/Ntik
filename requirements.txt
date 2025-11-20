@@ -1,0 +1,5 @@
+# requirements.txt
+Flask
+gunicorn # Sunucuyu çalıştırmak için
+# Buraya TikTok verilerini çekmek için kullanacağınız kütüphane eklenecek
+# Örnek: tiktok-scraper==x.x.x
